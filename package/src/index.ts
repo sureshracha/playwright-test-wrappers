@@ -1,8 +1,8 @@
 export * from './lib/playwright';
-export * from './lib/assert';
-export * from './lib/date.utils';
+export * as customAssert from './lib/assert';
+export * as dateUtils from './lib/date.utils';
 export * from './lib/db.utils';
-export * from './lib/file.utils';
-export * from './lib/logger';
-export * from './lib/string.utils';
-export * as context from './lib/testContext';
+export * as fileUtils from './lib/file.utils';
+export * as logger from './lib/logger';
+export * as stringUtils from './lib/string.utils';
+export * as tcontext from './lib/testContext';

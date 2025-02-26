@@ -1,12 +1,12 @@
 
 
-export  class StringUtils {
+ 
 
-    async convertAnyToString(val: any) {
+    export async function convertAnyToString(val: any) {
         return val.toString();
     }
 
-    async replaceAll(val: string, replaceChar: string) {
+    export async function replaceAll(val: string, replaceChar: string) {
         if (val.constructor === String) {
             if (val.includes(replaceChar)) {
                 return val.split(replaceChar).join('').toString();
@@ -14,7 +14,7 @@ export  class StringUtils {
         }
         return val;
     }
-    async getIndex(sourceArray: string[][], expectedValues: string[], exactMatch: boolean = false) {
+    export async function getIndex(sourceArray: string[][], expectedValues: string[], exactMatch: boolean = false) {
         let row_index = sourceArray.findIndex((row_text) => {
             for (const col_data of expectedValues) {
                 if (exactMatch) {
@@ -32,7 +32,7 @@ export  class StringUtils {
         }
         return -1;
     }
-    async toTitleCase(str: string) {
+    export async function toTitleCase(str: string) {
         let words = str.split(' ');
         let titleCase = '';
         for (const word of words) {
@@ -41,10 +41,12 @@ export  class StringUtils {
         return titleCase.trim();
     }
 
-    async toCamelCase(str: string) {
+    export async function toCamelCase(str: string) {
         return str.replace(/(?:^\w|[A-Z]|\b\w|\s+)/g, function (match, index) {
             if (+match === 0) return ""; // or if (/\s+/.test(match)) for white spaces
             return index === 0 ? match.toLowerCase() : match.toUpperCase();
         });
     }
-}
+
+
+ 

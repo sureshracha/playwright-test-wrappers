@@ -1,10 +1,10 @@
 import { expect } from "@playwright/test";
 import * as context from "./testContext";
-import {Logger} from './logger';
-const logger = new Logger();
-export  class CustomAssert {
+import * as logger from './logger';
+ 
+ 
 
-    async softAssert(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
+    export async function softAssert(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
         if (typeof (actual) === 'string' && typeof (expected) === 'string') {
             actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
             expected = caseSensitive ? expected.trim() : expected.toLowerCase().trim();
@@ -17,7 +17,7 @@ export  class CustomAssert {
         }
     }
 
-    async softContains(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
+    export async function softContains(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
         if (typeof (actual) === 'string' && typeof (expected) === 'string') {
             actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
             expected = caseSensitive ? expected.trim() : expected.toLowerCase().trim();
@@ -30,7 +30,7 @@ export  class CustomAssert {
         }
     }
 
-    async softNotContains(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
+    export async function softNotContains(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
         expected = caseSensitive ? expected.trim() : expected.toLowerCase().trim();
         if (!actual.includes(expected)) {
@@ -41,7 +41,7 @@ export  class CustomAssert {
         }
     }
 
-    async softContainsForStringArray(actual: string[], expected: any, message: string, caseSensitive: boolean = false) {
+    export async function softContainsForStringArray(actual: string[], expected: any, message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual : actual.toString().toLowerCase().split(',');
         expected = caseSensitive ? expected.trim() : expected.toLowerCase().trim();
         if (actual.indexOf(expected) >= 0) {
@@ -52,7 +52,7 @@ export  class CustomAssert {
             context.testContext.assertsJson.soft.push({ softContainsForStringArray: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` })
         }
     }
-    async softNotContainsForStringArray(actual: string[], expected: any, message: string, caseSensitive: boolean = false) {
+    export async function softNotContainsForStringArray(actual: string[], expected: any, message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual : actual.toString().toLowerCase().split(',');
         expected = caseSensitive ? expected.trim() : expected.toLowerCase().trim();
         if (actual.indexOf(expected) < 0) {
@@ -63,7 +63,7 @@ export  class CustomAssert {
         }
     }
 
-    async softAssertCompareStringArrays(actual: string[], expected: string[], message: string, caseSensitive: boolean = false) {
+    export async function softAssertCompareStringArrays(actual: string[], expected: string[], message: string, caseSensitive: boolean = false) {
         let diffVals = actual.filter(item => expected.indexOf(item) < 0);
         let count = diffVals.length;
         let flag = (count === 0);
@@ -75,7 +75,7 @@ export  class CustomAssert {
         }
     }
 
-    async softContainsOneOfThem(actual: any, expected: string[], message: string, caseSensitive: boolean = false) {
+    export async function softContainsOneOfThem(actual: any, expected: string[], message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
         expected = caseSensitive ? expected : expected.toString().toLowerCase().split(',');;
         let flag = false;
@@ -90,7 +90,7 @@ export  class CustomAssert {
         }
     }
 
-    async softNotContainsOneOfThem(actual: any, expected: string[], message: string, caseSensitive: boolean = false) {
+    export async function softNotContainsOneOfThem(actual: any, expected: string[], message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
         expected = caseSensitive ? expected : expected.toString().toLowerCase().split(',');;
         let flag = false;
@@ -108,7 +108,7 @@ export  class CustomAssert {
         }
     }
 
-    async hardAssert(actual: any, expected: any, message: string) {
+    export async function hardAssert(actual: any, expected: any, message: string) {
         if (actual === expected) {
             await logger.info(`hardAssert :: ${message} {Actual : [${actual}] - Expected [${expected}]}`);
         } else {
@@ -118,7 +118,7 @@ export  class CustomAssert {
         expect(actual, `hardAssert :: ${message} \n{Actual : [${actual}] - Expected [${expected}]}`).toEqual(expected);
     }
 
-    async hardContains(actual: string, expected: string, message: string) {
+    export async function hardContains(actual: string, expected: string, message: string) {
         if (actual.includes(expected)) {
             await logger.info(`hardContains :: ${message} {Actual : [${actual}] - Expected [${expected}]}`);
         } else {
@@ -127,7 +127,7 @@ export  class CustomAssert {
         expect(actual, `hardContains :: ${message} \n{Actual : [${actual}] - Expected [${expected}]}`).toContain(expected);
     }
 
-    async hardNotContains(actual: string, expected: string, message: string) {
+    export async function hardNotContains(actual: string, expected: string, message: string) {
         if (!actual.includes(expected)) {
             await logger.info(`hardNotContains :: ${message} {String : [${actual}] - Substring [${expected}]}`);
         } else {
@@ -137,6 +137,6 @@ export  class CustomAssert {
         expect(actual, `hardNotContains :: ${message} \n{Actual : [${actual}] - Expected [${expected}]}`).not.toContain(expected);
     }
 
-}
+
 
  
