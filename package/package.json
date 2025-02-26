@@ -1,6 +1,6 @@
 {
   "name": "@qe-solutions/playwright-test-wrappers",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Wrapper Class over the Playwright and additional libraries",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
