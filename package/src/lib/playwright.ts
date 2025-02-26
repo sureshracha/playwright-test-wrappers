@@ -46,18 +46,13 @@ export class UiElement {
         }
 
 
-        if ((await getUrl(this.pageIndex)).includes('stage-um')) {
-            if (this.stringFramelocator === '') {
-                await this.setHasFrame(true);
-                await this.setFrameLocator('iframe');
-            } else if (this.stringFramelocator != '') {
+         
+            if (this.stringFramelocator !== '') {
                 await this.setHasFrame(true);
             } else {
                 await this.setHasFrame(false);
             }
-        } else {
-            await this.setHasFrame(false);
-        }
+        
 
         this.frameLocator = await this.getHasFrame() ? this.page.frameLocator(this.stringFramelocator) : this.frameLocator;
 
