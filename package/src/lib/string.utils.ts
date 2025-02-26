@@ -1,6 +1,6 @@
 
 
-export default class StringUtils {
+export  class StringUtils {
 
     async convertAnyToString(val: any) {
         return val.toString();

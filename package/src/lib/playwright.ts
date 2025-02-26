@@ -1,6 +1,7 @@
 import { Page, APIRequestContext, BrowserContext, Browser, chromium, firefox, webkit, Locator, FrameLocator } from "@playwright/test";
-import logger, { options } from "./logger";
+import { options ,Logger} from "./logger";
 import { cssPath, xPath } from "playwright-dompath";
+const logger = new Logger();
 
 export class UiElement {
 

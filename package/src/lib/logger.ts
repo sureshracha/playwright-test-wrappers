@@ -1,14 +1,15 @@
-import testContext from './testContext';
+import * as context from './testContext';
 
-export default new class Logger {
-
-    info = async (msg: string) => {
-        testContext.logger.info(msg);
+export  class Logger {
+    async info(msg: string) {
+        context.testContext.logger.info(msg);
         if (!msg.toLowerCase().includes('password'))
             console.log(msg);
     }
-    error = async (msg: string) => {
-        testContext.logger.error(msg);
+
+     
+      async error(msg: string)  {
+        context.testContext.logger.error(msg);
         console.log(msg);
     }
 }

@@ -1,8 +1,8 @@
 import { expect } from "@playwright/test";
-import testContext from "./testContext";
-import logger from './logger';
-
-class CustomAssert {
+import * as context from "./testContext";
+import {Logger} from './logger';
+const logger = new Logger();
+export  class CustomAssert {
 
     async softAssert(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
         if (typeof (actual) === 'string' && typeof (expected) === 'string') {
@@ -13,7 +13,7 @@ class CustomAssert {
             await logger.info(`softAssert :: ${message} {Actual : [${actual}] - Expected [${expected}]}`);
         } else {
             await logger.error(`softAssert :: ${message} {Actual : [${actual}] - Expected [${expected}]}`);
-            testContext.assertsJson.soft.push({ softAssert: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` });
+            context.testContext.assertsJson.soft.push({ softAssert: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` });
         }
     }
 
@@ -26,7 +26,7 @@ class CustomAssert {
             await logger.info(`softContains :: ${message} {String : [${actual}] - Substring [${expected}]}`);
         } else {
             await logger.error(`softContains :: ${message} {String : [${actual}] - Substring [${expected}]}`);
-            testContext.assertsJson.soft.push({ softContains: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` });
+            context.testContext.assertsJson.soft.push({ softContains: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` });
         }
     }
 
@@ -37,7 +37,7 @@ class CustomAssert {
             await logger.info(`softNotContains :: ${message} {String : [${actual}] - Substring [${expected}]}`);
         } else {
             await logger.error(`softNotContains :: ${message} {String : [${actual}] - Substring [${expected}]}`);
-            testContext.assertsJson.soft.push({ softNotContains: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` });
+            context.testContext.assertsJson.soft.push({ softNotContains: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` });
         }
     }
 
@@ -49,7 +49,7 @@ class CustomAssert {
         } else {
             await logger.error(`softContainsForStringArray :: ${message} {Array : [${actual}] - Element [${expected}]}`);
             
-            testContext.assertsJson.soft.push({ softContainsForStringArray: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` })
+            context.testContext.assertsJson.soft.push({ softContainsForStringArray: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` })
         }
     }
     async softNotContainsForStringArray(actual: string[], expected: any, message: string, caseSensitive: boolean = false) {
@@ -59,7 +59,7 @@ class CustomAssert {
             await logger.info(`softNotContainsForStringArray :: ${message} {Array : [${actual}] - Element [${expected}]}`);
         } else {
             await logger.error(`softNotContainsForStringArray :: ${message} {Array : [${actual}] - Element [${expected}]}`);
-            testContext.assertsJson.soft.push({ softContainsForStringArray: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` })
+            context.testContext.assertsJson.soft.push({ softContainsForStringArray: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` })
         }
     }
 
@@ -71,7 +71,7 @@ class CustomAssert {
             await logger.info(`softAssertCompareArrays :: ${message} {Actual : [${actual}] - Expected  [${expected}]}`);
         } else {
             await logger.error(`softAssertCompareArrays :: ${message} {Actual : [${actual}] - Expected  [${expected}]}`);
-            testContext.assertsJson.soft.push({ softAssertCompareArrays: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}`, differnce: `[${diffVals}]` });
+            context.testContext.assertsJson.soft.push({ softAssertCompareArrays: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}`, differnce: `[${diffVals}]` });
         }
     }
 
@@ -86,7 +86,7 @@ class CustomAssert {
             await logger.info(`softContainsOneOfThem :: ${message} {Actual : [${actual}] - Expected One of Them [${expected}]}`);
         } else {
             await logger.error(`softContainsOneOfThem :: ${message} {Actual : [${actual}] - Expected One of Them [${expected}]}`);
-            testContext.assertsJson.soft.push({ softContainsOneOfThem: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, ExpectedOneofThem: `${expected}`, message: `${message}` });
+            context.testContext.assertsJson.soft.push({ softContainsOneOfThem: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, ExpectedOneofThem: `${expected}`, message: `${message}` });
         }
     }
 
@@ -101,7 +101,7 @@ class CustomAssert {
         }
         if (flag) {
             await logger.error(`softNotContainsOneOfThem :: ${message} {Actual : [${actual}] - Expected One of Them [${expected}]}`);
-            testContext.assertsJson.soft.push({ softContainsOneOfThem: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, ExpectedOneofThem: `${expected}`, message: `${message}` });
+            context.testContext.assertsJson.soft.push({ softContainsOneOfThem: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, ExpectedOneofThem: `${expected}`, message: `${message}` });
         } else {
             await logger.info(`softNotContainsOneOfThem :: ${message} {Actual : [${actual}] - Expected One of Them [${expected}]}`);
 
@@ -139,4 +139,4 @@ class CustomAssert {
 
 }
 
-export default new CustomAssert();
+ 
