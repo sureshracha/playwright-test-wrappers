@@ -1,4 +1,4 @@
- export class DataBase {
+ export class DataBaseUtils {
 
     protected dbConn: any;
     protected conn: any;

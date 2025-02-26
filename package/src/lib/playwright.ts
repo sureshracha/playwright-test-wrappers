@@ -1273,26 +1273,7 @@ export async function loopThroughElementsAndClick(locatorVal: any, index: Number
     }
 }
 
-export async function findElementWithinAnotherElement(parentLocatorVal: any, childLocatorVal: any, index: Number = 0) {
-    const allElements = await playwright.page.locator(`${parentLocatorVal} >> ${childLocatorVal}`).all();
-    let count = 0;
-    if (allElements.length > 0) {
-        for (let locElement of allElements) {
-            if (count === index) {
-                return locElement;
-            }
-            count++;
-        }
-    }
-}
 
-export async function findAllElementsWithinAnotherElement(parentLocatorVal: any, childLocatorVal: any) {
-    const allElements = await playwright.page.locator(`${parentLocatorVal} >> ${childLocatorVal}`).all();
-    if (allElements.length === 0) {
-        await logger.error(`No elements found with the given locator : parent locator = ${parentLocatorVal} >> child locator = ${childLocatorVal}`);
-    }
-    return allElements;
-}
 
 
 
