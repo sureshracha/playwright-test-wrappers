@@ -1,5 +1,5 @@
 import { Page, APIRequestContext, BrowserContext, Browser, chromium, firefox, webkit, Locator, FrameLocator } from "@playwright/test";
-import * as logger from "./logger";
+import {customLogger} from '@qe-solutions/test-automation-library';
 import { cssPath, xPath } from "playwright-dompath";
  
 
@@ -46,7 +46,9 @@ export class UiElement {
         }
 
 
-         
+         if(playwright.commonFrameLocator){
+             this.stringFramelocator = playwright.commonFrameLocator;
+         }
             if (this.stringFramelocator !== '') {
                 await this.setHasFrame(true);
             } else {
@@ -141,7 +143,7 @@ export class UiElement {
 
                 await this.clearFullCssAndXPath();
 
-                await logger.info(`clicked on the Link with name - ${linkName} with exact match - ${_linkNameExactMatch} on ${this.objectDescriptor} `);
+                  playwright.logger.info(`clicked on the Link with name - ${linkName} with exact match - ${_linkNameExactMatch} on ${this.objectDescriptor} `);
             }
         })
 
@@ -150,7 +152,7 @@ export class UiElement {
 
     async clickLastLink(options?: { force?: boolean }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
-        await logger.info(`clicked on the last link  - ${this.objectDescriptor}`);
+        playwright.logger.info(`clicked on the last link  - ${this.objectDescriptor}`);
         await (await this.getElement()).last().click({ force: _force });
         await this.clearFullCssAndXPath();
     }
@@ -158,7 +160,7 @@ export class UiElement {
     async clickFirstLink(options?: { force?: boolean }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
 
-        await logger.info(`clicked on the first link  - ${this.objectDescriptor}`);
+        playwright.logger.info(`clicked on the first link  - ${this.objectDescriptor}`);
         await (await this.getElement()).first().click({ force: _force });
         await this.clearFullCssAndXPath();
 
@@ -281,7 +283,7 @@ export class UiElement {
 
         await (await this.getElement()).filter({ hasText: `${containsText}` }).nth(_index).click({ force: _force })
         await staticWait(100);
-        await logger.info(`  clicked on the ${this.objectDescriptor} contains the text : [${containsText}]`);
+        playwright.logger.info(`  clicked on the ${this.objectDescriptor} contains the text : [${containsText}]`);
         await this.clearFullCssAndXPath();
 
     }
@@ -297,7 +299,7 @@ export class UiElement {
         let _index = index === -1 ? 0 : index;
         let text = await (await this.getElement()).nth(_index).innerText();
         await this.clearFullCssAndXPath();
-        await logger.info(`getting text from the locator : "${this.objectDescriptor}"`);
+        playwright.logger.info(`getting text from the locator : "${this.objectDescriptor}"`);
         return text;
     }
 
@@ -473,7 +475,7 @@ export class UiElement {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
         const obj = (await this.getElement()).nth(_objIndex);
         await obj.click({ force: _force });
-        await logger.info(`clicked on the ${this.objectDescriptor} of [${_objIndex}]`);
+        playwright.logger.info(`clicked on the ${this.objectDescriptor} of [${_objIndex}]`);
         await this.clearFullCssAndXPath();
     }
 
@@ -482,7 +484,7 @@ export class UiElement {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
         const obj = (await this.getElement()).nth(_objIndex);
         await obj.dblclick({ force: _force });
-        await logger.info(`dbl clicked on the ${this.objectDescriptor} of [${_objIndex}`);
+        playwright.logger.info(`dbl clicked on the ${this.objectDescriptor} of [${_objIndex}`);
         await this.clearFullCssAndXPath();
 
     }
@@ -570,9 +572,9 @@ export class UiElement {
             let flag = await obj.getAttribute('disabled')
             if (!flag) {
                 await obj.check({ force: _force })
-                await logger.info(`${this.objectDescriptor} - checked the checkbox`);
+                playwright.logger.info(`${this.objectDescriptor} - checked the checkbox`);
             } else {
-                await logger.info(`${this.objectDescriptor} - unable to check the checkbox, its disabled`);
+                playwright.logger.info(`${this.objectDescriptor} - unable to check the checkbox, its disabled`);
             }
             await this.clearFullCssAndXPath();
         })
@@ -586,9 +588,9 @@ export class UiElement {
         let flag = await obj.getAttribute('disabled')
         if (!flag) {
             await obj.uncheck({ force: _force })
-            await logger.info(`${this.objectDescriptor} - unchecked the checkbox`);
+            playwright.logger.info(`${this.objectDescriptor} - unchecked the checkbox`);
         } else {
-            await logger.info(`${this.objectDescriptor} - unable to uncheck the checkbox, its disabled`);
+            playwright.logger.info(`${this.objectDescriptor} - unable to uncheck the checkbox, its disabled`);
         }
         await this.clearFullCssAndXPath();
     }
@@ -603,7 +605,7 @@ export class UiElement {
         if (options?.keyPress?.valueOf() !== undefined) {
             await (await this.getElement()).press(options?.keyPress);
         }
-        await logger.info(`${this.objectDescriptor} - Set the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
+        playwright.logger.info(`${this.objectDescriptor} - Set the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
         await this.clearFullCssAndXPath();
     }
 
@@ -621,7 +623,7 @@ export class UiElement {
         if (options?.keyPress?.valueOf() !== undefined) {
             await (await this.getElement()).press(options?.keyPress);
         }
-        await logger.info(`${this.objectDescriptor} - Type the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
+        playwright.logger.info(`${this.objectDescriptor} - Type the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
         await this.clearFullCssAndXPath();
     }
 
@@ -631,19 +633,19 @@ export class UiElement {
         if (options?.keyPress?.valueOf() !== undefined) {
             await (await this.getElement()).press(options?.keyPress);
         }
-        await logger.info(`${this.objectDescriptor} - pressSequentially the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
+        playwright.logger.info(`${this.objectDescriptor} - pressSequentially the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
         await this.clearFullCssAndXPath();
     }
 
     async selectListOptionByText(option: string) {
         await (await this.getElement()).selectOption(option)
-        await logger.info(`${this.objectDescriptor} - Selecting the option : ` + option)
+        playwright.logger.info(`${this.objectDescriptor} - Selecting the option : ` + option)
         await this.clearFullCssAndXPath();
     }
 
     async selectListOptionByIndex(indexOf: number) {
         await (await this.getElement()).selectOption({ index: indexOf })
-        await logger.info(`${this.objectDescriptor} - Selecting the option index : ` + indexOf)
+        playwright.logger.info(`${this.objectDescriptor} - Selecting the option index : ` + indexOf)
         await this.clearFullCssAndXPath();
     }
 
@@ -697,10 +699,10 @@ export class UiElement {
      */
     async getCellData(row: number, col: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
-        await logger.info(`getting cell data from ${this.objectDescriptor} - Row,Column [${row},${col}]`);
+        playwright.logger.info(`getting cell data from ${this.objectDescriptor} - Row,Column [${row},${col}]`);
         let val = await (await this.getElement()).locator(_locator).nth(row).locator('td').nth(col).innerText();
         await this.clearFullCssAndXPath();
-        await logger.info(`Row,Column [${row},${col}] = ${val}`);
+        playwright.logger.info(`Row,Column [${row},${col}] = ${val}`);
         return val.toString();
     }
 
@@ -882,7 +884,7 @@ export class UiElement {
             ele = await this.getElement();
             let count = await this.isExist() ? Number(await ele.count()) : 0;
             await this.clearFullCssAndXPath();
-            await logger.info(`Number of rows in the table = ${count}`);
+            playwright.logger.info(`Number of rows in the table = ${count}`);
             return count;
         })
     }
@@ -943,7 +945,7 @@ export class UiElement {
             for (let index = 0; index < rows; index++) {
                 const table_data = await ((await this.getElement()).locator(_locator).nth(index).allInnerTexts());
                 let rowdata = table_data.toString().split('\t').join('').split('\n');
-                await logger.info(`Actual Row data = ${rowdata}`);
+                playwright.logger.info(`Actual Row data = ${rowdata}`);
                 if (rowdata.length > 1) {
                     arr.push(rowdata);
                 }
@@ -1142,7 +1144,7 @@ export class UiElement {
         if (await row.getByRole('link').nth(_lnkIndex).isEnabled()) {
             await row.getByRole('link').nth(_lnkIndex).click();
         } else {
-            await logger.error(_locator + ' text row is not enabled');
+            playwright.logger.error(_locator + ' text row is not enabled');
         }
         await this.clearFullCssAndXPath();
     }
@@ -1156,7 +1158,9 @@ export const playwright = {
     popup: undefined as unknown as Page,
     newPage: undefined as unknown as Page,
     context: undefined as unknown as BrowserContext,
-    browser: undefined as unknown as Browser
+    browser: undefined as unknown as Browser,
+    logger :  customLogger,
+    commonFrameLocator : undefined as unknown as string
 }
 
 export const invokeBrowser = async (browserType: string, options?: { headless?: boolean, channel?: string }) => {
@@ -1190,7 +1194,7 @@ export async function waitForPageLoad() {
 
 export async function waitForUrl(url: string) {
 
-    await logger.info(' Waiting for the URL : ' + url)
+    playwright.logger.info(' Waiting for the URL : ' + url)
     await playwright.page.waitForURL(url, { timeout: 120000, waitUntil: 'domcontentloaded' })
 }
 
@@ -1201,11 +1205,11 @@ export async function waitForSpinnerHidden() {
 
 export async function staticWait(timeOut: number, isPage: boolean = true, waitForSpinner: boolean = true) {
     if (isPage) {
-        await logger.info(`Waiting for the page : ${timeOut} milliseconds`);
+        playwright.logger.info(`Waiting for the page : ${timeOut} milliseconds`);
         if (waitForSpinner) { await waitForSpinnerHidden(); }
         await playwright.page.waitForTimeout(timeOut);
     } else {
-        await logger.info(`Waiting for the popup : ${timeOut} milliseconds`);
+        playwright.logger.info(`Waiting for the popup : ${timeOut} milliseconds`);
         await playwright.popup.waitForTimeout(timeOut);
     }
 }
@@ -1213,7 +1217,7 @@ export async function staticWait(timeOut: number, isPage: boolean = true, waitFo
 export async function gotoUrl(url: string) {
     await playwright.page.route('**/*.{png,jpg,jpeg}', route => route.abort());
     await playwright.page.goto(url, { timeout: 500000, waitUntil: 'domcontentloaded' });
-    await logger.info('Launching URL : ' + url)
+    playwright.logger.info('Launching URL : ' + url)
 }
 
 export async function closeplaywright() {
@@ -1297,7 +1301,7 @@ export async function keyboard(method: string, key: string, options?: { isPage?:
         page = pages[_pageIndex];
     }
     key = key.charAt(0).toUpperCase() + key.slice(1);
-    await logger.info(`Keybaord method : ${method} - ${key}`);
+    playwright.logger.info(`Keybaord method : ${method} - ${key}`);
     switch (method.toLowerCase().trim()) {
         case 'type':
             await page.keyboard.type(key);
