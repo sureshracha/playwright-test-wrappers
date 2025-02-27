@@ -1,1 +1,0 @@
-const sayHello = require('./package/index.js')
