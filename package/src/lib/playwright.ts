@@ -745,11 +745,13 @@ export class UiElement {
      * properties:
      * @returns an array of data from a specific column in a table.
      */
-    async getAllRowsColumnData(column: number, options?: { locator?: string }) {
+    async getAllRowsColumnData(column: number, options?: { locator?: string, numberofRows?: number }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
+        let _numberofRows = options?.numberofRows?.valueOf() === undefined ? 0 : options?.numberofRows;
 
         let arr: string[] = []; // Specify the type of arr as string[]
-        let length = await (await this.getElement()).locator(_locator).count();
+        let actualLength = await (await this.getElement()).locator(_locator).count();
+        let length = _numberofRows === 0 ? actualLength : actualLength < _numberofRows ? actualLength : _numberofRows;
         for (let index = 0; index < length; index++) {
             let text = await (await this.getElement()).locator(_locator).nth(index).locator('td').nth(column).innerText();
             arr.push(text);
