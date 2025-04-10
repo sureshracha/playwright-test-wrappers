@@ -1,6 +1,6 @@
 {
   "name": "@qe-solutions/playwright-test-wrappers",
-  "version": "0.0.3",
+  "version": "0.0.17",
   "description": "Wrapper Class over the Playwright and additional libraries",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@playwright/test": "^1.50.1",
+    "@qe-solutions/test-automation-library": "^0.0.11",
     "@types/node": "^22.13.5",
     "alasql": "^4.6.3",
     "mysql": "^2.18.1",

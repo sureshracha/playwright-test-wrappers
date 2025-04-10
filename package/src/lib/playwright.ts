@@ -1,19 +1,19 @@
 import { Page, APIRequestContext, BrowserContext, Browser, chromium, firefox, webkit, Locator, FrameLocator } from "@playwright/test";
-import * as logger from "./logger";
+import { customLogger } from '@qe-solutions/test-automation-library';
 import { cssPath, xPath } from "playwright-dompath";
- 
+
 
 export class UiElement {
 
     protected locator: string;
-    protected page!:  Page;
+    protected page!: Page;
     protected objectDescriptor: string;
     protected isPopupExist: boolean;
     protected pageIndex: number;
     protected fullCss: string;
-    protected fullXpath: string ='';
+    protected fullXpath: string = '';
     protected tempLocator!: Locator;
-    protected tempLocators: Locator[]=[];
+    protected tempLocators: Locator[] = [];
     protected hasFrame: boolean;
     protected frameLocator!: FrameLocator;
     protected stringFramelocator: string;
@@ -32,27 +32,29 @@ export class UiElement {
 
     protected async getPage() {
         if (this.isPopupExist === true) {
-            if (playwright.popup === undefined) {
-                this.page = playwright.popup;
+            if (playwrightWrapper.popup === undefined) {
+                this.page = playwrightWrapper.popup;
                 const [newPopup] = await Promise.all([
-                    playwright.page.waitForEvent('popup')
+                    playwrightWrapper.page.waitForEvent('popup')
                 ]);
-                playwright.popup = newPopup;
+                playwrightWrapper.popup = newPopup;
             }
-            this.page = playwright.popup;
+            this.page = playwrightWrapper.popup;
         } else {
-            const pages = playwright.context.pages();
+            const pages = playwrightWrapper.context.pages();
             this.page = pages[this.pageIndex];
         }
 
 
-         
-            if (this.stringFramelocator !== '') {
-                await this.setHasFrame(true);
-            } else {
-                await this.setHasFrame(false);
-            }
-        
+        if (playwrightWrapper.commonFrameLocator) {
+            this.stringFramelocator = playwrightWrapper.commonFrameLocator;
+        }
+        if (this.stringFramelocator !== '') {
+            await this.setHasFrame(true);
+        } else {
+            await this.setHasFrame(false);
+        }
+
 
         this.frameLocator = await this.getHasFrame() ? this.page.frameLocator(this.stringFramelocator) : this.frameLocator;
 
@@ -85,15 +87,15 @@ export class UiElement {
     async clickToOpenPopup(options?: { force?: boolean }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
         const [newPopup] = await Promise.all([
-            playwright.page.waitForEvent('popup'),
-            playwright.page.locator(await this.getLocator()).click({ force: _force })
+            playwrightWrapper.page.waitForEvent('popup'),
+            playwrightWrapper.page.locator(await this.getLocator()).click({ force: _force })
         ]);
-        playwright.popup = newPopup;
+        playwrightWrapper.popup = newPopup;
     }
 
     protected async getElements() {
         return await this.waitTillElementToBeReady().then(async () => {
-            
+
             let elements = await this.getHasFrame() ? this.page.frameLocator(this.stringFramelocator).locator(await this.getLocator()).all() : this.page.locator(await this.getLocator()).all();
             // console.log('found element: ', ele['_selector']);
             return elements;
@@ -141,7 +143,7 @@ export class UiElement {
 
                 await this.clearFullCssAndXPath();
 
-                await logger.info(`clicked on the Link with name - ${linkName} with exact match - ${_linkNameExactMatch} on ${this.objectDescriptor} `);
+                playwrightWrapper.logger.info(`clicked on the Link with name - ${linkName} with exact match - ${_linkNameExactMatch} on ${this.objectDescriptor} `);
             }
         })
 
@@ -150,7 +152,7 @@ export class UiElement {
 
     async clickLastLink(options?: { force?: boolean }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
-        await logger.info(`clicked on the last link  - ${this.objectDescriptor}`);
+        playwrightWrapper.logger.info(`clicked on the last link  - ${this.objectDescriptor}`);
         await (await this.getElement()).last().click({ force: _force });
         await this.clearFullCssAndXPath();
     }
@@ -158,7 +160,7 @@ export class UiElement {
     async clickFirstLink(options?: { force?: boolean }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
 
-        await logger.info(`clicked on the first link  - ${this.objectDescriptor}`);
+        playwrightWrapper.logger.info(`clicked on the first link  - ${this.objectDescriptor}`);
         await (await this.getElement()).first().click({ force: _force });
         await this.clearFullCssAndXPath();
 
@@ -281,7 +283,7 @@ export class UiElement {
 
         await (await this.getElement()).filter({ hasText: `${containsText}` }).nth(_index).click({ force: _force })
         await staticWait(100);
-        await logger.info(`  clicked on the ${this.objectDescriptor} contains the text : [${containsText}]`);
+        playwrightWrapper.logger.info(`  clicked on the ${this.objectDescriptor} contains the text : [${containsText}]`);
         await this.clearFullCssAndXPath();
 
     }
@@ -297,7 +299,7 @@ export class UiElement {
         let _index = index === -1 ? 0 : index;
         let text = await (await this.getElement()).nth(_index).innerText();
         await this.clearFullCssAndXPath();
-        await logger.info(`getting text from the locator : "${this.objectDescriptor}"`);
+        playwrightWrapper.logger.info(`getting text from the locator : "${this.objectDescriptor}"`);
         return text;
     }
 
@@ -473,7 +475,7 @@ export class UiElement {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
         const obj = (await this.getElement()).nth(_objIndex);
         await obj.click({ force: _force });
-        await logger.info(`clicked on the ${this.objectDescriptor} of [${_objIndex}]`);
+        playwrightWrapper.logger.info(`clicked on the ${this.objectDescriptor} of [${_objIndex}]`);
         await this.clearFullCssAndXPath();
     }
 
@@ -482,7 +484,7 @@ export class UiElement {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
         const obj = (await this.getElement()).nth(_objIndex);
         await obj.dblclick({ force: _force });
-        await logger.info(`dbl clicked on the ${this.objectDescriptor} of [${_objIndex}`);
+        playwrightWrapper.logger.info(`dbl clicked on the ${this.objectDescriptor} of [${_objIndex}`);
         await this.clearFullCssAndXPath();
 
     }
@@ -570,9 +572,9 @@ export class UiElement {
             let flag = await obj.getAttribute('disabled')
             if (!flag) {
                 await obj.check({ force: _force })
-                await logger.info(`${this.objectDescriptor} - checked the checkbox`);
+                playwrightWrapper.logger.info(`${this.objectDescriptor} - checked the checkbox`);
             } else {
-                await logger.info(`${this.objectDescriptor} - unable to check the checkbox, its disabled`);
+                playwrightWrapper.logger.info(`${this.objectDescriptor} - unable to check the checkbox, its disabled`);
             }
             await this.clearFullCssAndXPath();
         })
@@ -586,9 +588,9 @@ export class UiElement {
         let flag = await obj.getAttribute('disabled')
         if (!flag) {
             await obj.uncheck({ force: _force })
-            await logger.info(`${this.objectDescriptor} - unchecked the checkbox`);
+            playwrightWrapper.logger.info(`${this.objectDescriptor} - unchecked the checkbox`);
         } else {
-            await logger.info(`${this.objectDescriptor} - unable to uncheck the checkbox, its disabled`);
+            playwrightWrapper.logger.info(`${this.objectDescriptor} - unable to uncheck the checkbox, its disabled`);
         }
         await this.clearFullCssAndXPath();
     }
@@ -603,7 +605,7 @@ export class UiElement {
         if (options?.keyPress?.valueOf() !== undefined) {
             await (await this.getElement()).press(options?.keyPress);
         }
-        await logger.info(`${this.objectDescriptor} - Set the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
+        playwrightWrapper.logger.info(`${this.objectDescriptor} - Set the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
         await this.clearFullCssAndXPath();
     }
 
@@ -621,7 +623,7 @@ export class UiElement {
         if (options?.keyPress?.valueOf() !== undefined) {
             await (await this.getElement()).press(options?.keyPress);
         }
-        await logger.info(`${this.objectDescriptor} - Type the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
+        playwrightWrapper.logger.info(`${this.objectDescriptor} - Type the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
         await this.clearFullCssAndXPath();
     }
 
@@ -631,19 +633,19 @@ export class UiElement {
         if (options?.keyPress?.valueOf() !== undefined) {
             await (await this.getElement()).press(options?.keyPress);
         }
-        await logger.info(`${this.objectDescriptor} - pressSequentially the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
+        playwrightWrapper.logger.info(`${this.objectDescriptor} - pressSequentially the value -  ${this.objectDescriptor.toLowerCase().includes('password') ? '*******' : inputString}`);
         await this.clearFullCssAndXPath();
     }
 
     async selectListOptionByText(option: string) {
         await (await this.getElement()).selectOption(option)
-        await logger.info(`${this.objectDescriptor} - Selecting the option : ` + option)
+        playwrightWrapper.logger.info(`${this.objectDescriptor} - Selecting the option : ` + option)
         await this.clearFullCssAndXPath();
     }
 
     async selectListOptionByIndex(indexOf: number) {
         await (await this.getElement()).selectOption({ index: indexOf })
-        await logger.info(`${this.objectDescriptor} - Selecting the option index : ` + indexOf)
+        playwrightWrapper.logger.info(`${this.objectDescriptor} - Selecting the option index : ` + indexOf)
         await this.clearFullCssAndXPath();
     }
 
@@ -697,10 +699,10 @@ export class UiElement {
      */
     async getCellData(row: number, col: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
-        await logger.info(`getting cell data from ${this.objectDescriptor} - Row,Column [${row},${col}]`);
+        playwrightWrapper.logger.info(`getting cell data from ${this.objectDescriptor} - Row,Column [${row},${col}]`);
         let val = await (await this.getElement()).locator(_locator).nth(row).locator('td').nth(col).innerText();
         await this.clearFullCssAndXPath();
-        await logger.info(`Row,Column [${row},${col}] = ${val}`);
+        playwrightWrapper.logger.info(`Row,Column [${row},${col}] = ${val}`);
         return val.toString();
     }
 
@@ -743,11 +745,13 @@ export class UiElement {
      * properties:
      * @returns an array of data from a specific column in a table.
      */
-    async getAllRowsColumnData(column: number, options?: { locator?: string }) {
+    async getAllRowsColumnData(column: number, options?: { locator?: string, numberofRows?: number }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
+        let _numberofRows = options?.numberofRows?.valueOf() === undefined ? 0 : options?.numberofRows;
 
         let arr: string[] = []; // Specify the type of arr as string[]
-        let length = await (await this.getElement()).locator(_locator).count();
+        let actualLength = await (await this.getElement()).locator(_locator).count();
+        let length = _numberofRows === 0 ? actualLength : actualLength < _numberofRows ? actualLength : _numberofRows;
         for (let index = 0; index < length; index++) {
             let text = await (await this.getElement()).locator(_locator).nth(index).locator('td').nth(column).innerText();
             arr.push(text);
@@ -882,7 +886,7 @@ export class UiElement {
             ele = await this.getElement();
             let count = await this.isExist() ? Number(await ele.count()) : 0;
             await this.clearFullCssAndXPath();
-            await logger.info(`Number of rows in the table = ${count}`);
+            playwrightWrapper.logger.info(`Number of rows in the table = ${count}`);
             return count;
         })
     }
@@ -943,7 +947,7 @@ export class UiElement {
             for (let index = 0; index < rows; index++) {
                 const table_data = await ((await this.getElement()).locator(_locator).nth(index).allInnerTexts());
                 let rowdata = table_data.toString().split('\t').join('').split('\n');
-                await logger.info(`Actual Row data = ${rowdata}`);
+                playwrightWrapper.logger.info(`Actual Row data = ${rowdata}`);
                 if (rowdata.length > 1) {
                     arr.push(rowdata);
                 }
@@ -1142,21 +1146,23 @@ export class UiElement {
         if (await row.getByRole('link').nth(_lnkIndex).isEnabled()) {
             await row.getByRole('link').nth(_lnkIndex).click();
         } else {
-            await logger.error(_locator + ' text row is not enabled');
+            playwrightWrapper.logger.error(_locator + ' text row is not enabled');
         }
         await this.clearFullCssAndXPath();
     }
 
 }
 
-export const playwright = {
+export const playwrightWrapper = {
     // @ts-ignore
     page: undefined as Page,
     apiContext: undefined as unknown as APIRequestContext,
     popup: undefined as unknown as Page,
     newPage: undefined as unknown as Page,
     context: undefined as unknown as BrowserContext,
-    browser: undefined as unknown as Browser
+    browser: undefined as unknown as Browser,
+    logger: customLogger,
+    commonFrameLocator: undefined as unknown as string
 }
 
 export const invokeBrowser = async (browserType: string, options?: { headless?: boolean, channel?: string }) => {
@@ -1183,50 +1189,50 @@ export const invokeBrowser = async (browserType: string, options?: { headless?: 
 }
 
 export async function waitForPageLoad() {
-    await playwright.page.waitForLoadState('domcontentloaded');
-    await playwright.page.waitForLoadState();
+    await playwrightWrapper.page.waitForLoadState('domcontentloaded');
+    await playwrightWrapper.page.waitForLoadState();
     return true;
 }
 
 export async function waitForUrl(url: string) {
 
-    await logger.info(' Waiting for the URL : ' + url)
-    await playwright.page.waitForURL(url, { timeout: 120000, waitUntil: 'domcontentloaded' })
+    playwrightWrapper.logger.info(' Waiting for the URL : ' + url)
+    await playwrightWrapper.page.waitForURL(url, { timeout: 120000, waitUntil: 'domcontentloaded' })
 }
 
 export async function waitForSpinnerHidden() {
     let _locator = '.spinner';
-    await playwright.page.locator(_locator).nth(0).waitFor({ state: "hidden", timeout: 60000 });
+    await playwrightWrapper.page.locator(_locator).nth(0).waitFor({ state: "hidden", timeout: 60000 });
 }
 
 export async function staticWait(timeOut: number, isPage: boolean = true, waitForSpinner: boolean = true) {
     if (isPage) {
-        await logger.info(`Waiting for the page : ${timeOut} milliseconds`);
+        playwrightWrapper.logger.info(`Waiting for the page : ${timeOut} milliseconds`);
         if (waitForSpinner) { await waitForSpinnerHidden(); }
-        await playwright.page.waitForTimeout(timeOut);
+        await playwrightWrapper.page.waitForTimeout(timeOut);
     } else {
-        await logger.info(`Waiting for the popup : ${timeOut} milliseconds`);
-        await playwright.popup.waitForTimeout(timeOut);
+        playwrightWrapper.logger.info(`Waiting for the popup : ${timeOut} milliseconds`);
+        await playwrightWrapper.popup.waitForTimeout(timeOut);
     }
 }
 
 export async function gotoUrl(url: string) {
-    await playwright.page.route('**/*.{png,jpg,jpeg}', route => route.abort());
-    await playwright.page.goto(url, { timeout: 500000, waitUntil: 'domcontentloaded' });
-    await logger.info('Launching URL : ' + url)
+    // await playwrightWrapper.page.route('**/*.{png,jpg,jpeg}', route => route.abort());
+    await playwrightWrapper.page.goto(url, { timeout: 500000, waitUntil: 'domcontentloaded' });
+    playwrightWrapper.logger.info('Launching URL : ' + url)
 }
 
 export async function closeplaywright() {
-    if (playwright.popup !== undefined) {
-        await playwright.popup.close();
+    if (playwrightWrapper.popup !== undefined) {
+        await playwrightWrapper.popup.close();
     }
-    if (playwright.page) {
-        await playwright.page.close();
+    if (playwrightWrapper.page) {
+        await playwrightWrapper.page.close();
     }
 }
 
 export async function getUrl(pageIndex: number = 0) {
-    const pages = playwright.context.pages();
+    const pages = playwrightWrapper.context.pages();
     const page = pages[pageIndex];
     await waitForPageLoad();
     return page.url().toString();
@@ -1235,29 +1241,29 @@ export async function getUrl(pageIndex: number = 0) {
 export async function pause(options?: { isPage?: boolean }) {
     let _flag = options?.isPage?.valueOf() === undefined ? true : options?.isPage?.valueOf();
     if (_flag) {
-        await playwright.page.pause();
+        await playwrightWrapper.page.pause();
     } else {
-        await playwright.popup.pause();
+        await playwrightWrapper.popup.pause();
     }
 }
 
 export async function refreshPage(options?: { isPage?: boolean }) {
     let _flag = options?.isPage?.valueOf() === undefined ? true : options?.isPage?.valueOf();
     if (_flag) {
-        await playwright.page.reload();
+        await playwrightWrapper.page.reload();
     } else {
-        await playwright.popup.reload();
+        await playwrightWrapper.popup.reload();
     }
 }
 
 export async function getApiResponse(url: string) {
-    const response = await playwright.page.waitForResponse((response) => response.url().includes(url));
+    const response = await playwrightWrapper.page.waitForResponse((response) => response.url().includes(url));
     return response;
 
 }
 
 export async function loopThroughElementsAndClick(locatorVal: any, index: Number = 0, action: string = 'click') {
-    const allElements = await playwright.page.locator(locatorVal).all();
+    const allElements = await playwrightWrapper.page.locator(locatorVal).all();
     let count = 0;
     for (let locElement of allElements) {
         if (count === index) {
@@ -1284,20 +1290,20 @@ export async function keyboard(method: string, key: string, options?: { isPage?:
     let page: Page;
 
     if (_isPage !== true) {
-        if (playwright.popup === undefined) {
+        if (playwrightWrapper.popup === undefined) {
 
             const [newPopup] = await Promise.all([
-                playwright.page.waitForEvent('popup')
+                playwrightWrapper.page.waitForEvent('popup')
             ]);
-            playwright.popup = newPopup;;
+            playwrightWrapper.popup = newPopup;;
         }
-        page = playwright.popup;
+        page = playwrightWrapper.popup;
     } else {
-        const pages = playwright.context.pages();
+        const pages = playwrightWrapper.context.pages();
         page = pages[_pageIndex];
     }
     key = key.charAt(0).toUpperCase() + key.slice(1);
-    await logger.info(`Keybaord method : ${method} - ${key}`);
+    playwrightWrapper.logger.info(`Keybaord method : ${method} - ${key}`);
     switch (method.toLowerCase().trim()) {
         case 'type':
             await page.keyboard.type(key);
