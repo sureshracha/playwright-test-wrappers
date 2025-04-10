@@ -149,6 +149,14 @@ export class UiElement {
 
     }
 
+    async typeChars(chars: string) {
+        const _chars = chars.split('');
+        await this.getPage().then(async () => {
+            for (const _char of _chars) {
+                await this.page.keyboard.press(String(_char));
+            }
+        })
+    }
 
     async clickLastLink(options?: { force?: boolean }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
