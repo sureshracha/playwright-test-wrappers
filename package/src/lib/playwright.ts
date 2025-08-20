@@ -753,16 +753,16 @@ export class UiElement {
      * properties:
      * @returns an array of data from a specific column in a table.
      */
-    async getAllRowsColumnData(column: number, options?: { locator?: string, numberofRows?: number }) {
-        let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
-        let _numberofRows = options?.numberofRows?.valueOf() === undefined ? 0 : options?.numberofRows;
-
-        let arr: string[] = []; // Specify the type of arr as string[]
+    async getAllRowsColumnData(column: number, options?: { locator?: string, numberofRows?: number, startRowNumber?: number }) {
+       let _locator = options?.locator?.valueOf() === void 0 ? "tr" : options?.locator;
+        let _startRowNumber = options?.startRowNumber?.valueOf() === void 0 ? 0 : options?.startRowNumber;
+        let _numberofRows = options?.numberofRows?.valueOf() === void 0 ? 0 : options?.numberofRows;
+        let arr = [];
         let actualLength = await (await this.getElement()).locator(_locator).count();
         let length = _numberofRows === 0 ? actualLength : actualLength < _numberofRows ? actualLength : _numberofRows;
-        for (let index = 0; index < length; index++) {
-            let text = await (await this.getElement()).locator(_locator).nth(index).locator('td').nth(column).innerText();
-            arr.push(text);
+        for (let index = _startRowNumber; index < length; index++) {
+          let text = await (await this.getElement()).locator(_locator).nth(index).locator("td").nth(column).innerText();
+          arr.push(text);
         }
         await this.clearFullCssAndXPath();
         return arr;
