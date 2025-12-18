@@ -954,8 +954,8 @@ export class UiElement {
             const rows = await (await this.getElement()).locator(_locator).count();
             for (let index = 0; index < rows; index++) {
                 const table_data = await ((await this.getElement()).locator(_locator).nth(index).allInnerTexts());
-                let rowdata = table_data.toString().split('\t').join('').split('\n');
-                playwrightWrapper.logger.info(`Actual Row data = ${rowdata}`);
+                let rowdata = table_data.toString().split(/[\n\t]/g);
+                playwrightWrapper.logger.info(`Actual Table Row data = ${rowdata}`);
                 if (rowdata.length > 1) {
                     arr.push(rowdata);
                 }
