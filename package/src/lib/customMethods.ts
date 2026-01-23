@@ -266,7 +266,7 @@ export class CustomMethods {
 
         const nRows = await page.count()
         for (let index = 0; index < nRows; index++) {
-            await (await page.locator(_locator).nth(index).allInnerTexts().then(async (row_text) => {
+            await page.locator(_locator).nth(index).allInnerTexts().then(async (row_text) => {
                 let row_text_arr = row_text.toString().split('\n');
 
                 for (const col_data of rowValues) {
@@ -282,7 +282,7 @@ export class CustomMethods {
                     foundIndices.push(index);
                 }
             })
-    }
+        }
         return foundIndices;
 
     }
