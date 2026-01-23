@@ -6,3 +6,4 @@ export * as fileUtils from './lib/file.utils';
 export * as logger from './lib/logger';
 export * as stringUtils from './lib/string.utils';
 export * as tcontext from './lib/testContext';
+export * from './lib/customMethods';
