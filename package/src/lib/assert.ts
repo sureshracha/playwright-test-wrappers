@@ -4,6 +4,22 @@ import * as logger from './logger';
  
  
 
+    /**
+     * Performs a soft equality assertion.
+     *
+     * Details:
+     * - Compares `actual` and `expected`.
+     * - Optionally normalizes string values to lower case for case-insensitive comparison.
+     * - Logs pass/fail and stores failures in `testContext.assertsJson.soft` without throwing.
+     *
+     * @param actual Actual value from the test flow.
+     * @param expected Expected value.
+     * @param message Custom assertion message for logs and reports.
+     * @param caseSensitive Set `true` to compare strings with case sensitivity.
+     *
+     * @example
+     * await softAssert(statusText, "Success", "Status text validation");
+     */
     export async function softAssert(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
         if (typeof (actual) === 'string' && typeof (expected) === 'string') {
             actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
@@ -17,6 +33,17 @@ import * as logger from './logger';
         }
     }
 
+    /**
+     * Performs a soft substring assertion.
+     *
+     * Details:
+     * - Verifies whether `actual` contains `expected`.
+     * - Supports optional case-sensitive comparison for string inputs.
+     * - Logs and records failure without failing the test immediately.
+     *
+     * @example
+     * await softContains(pageTitle, "dashboard", "Page title should include dashboard");
+     */
     export async function softContains(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
         if (typeof (actual) === 'string' && typeof (expected) === 'string') {
             actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
@@ -30,6 +57,16 @@ import * as logger from './logger';
         }
     }
 
+    /**
+     * Performs a soft negative substring assertion.
+     *
+     * Details:
+     * - Verifies that `actual` does not contain `expected`.
+     * - Records the failure in soft assertions when the value is found.
+     *
+     * @example
+     * await softNotContains(errorBanner, "fatal", "Fatal error should not be shown");
+     */
     export async function softNotContains(actual: any, expected: any, message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
         expected = caseSensitive ? expected.trim() : expected.toLowerCase().trim();
@@ -41,6 +78,16 @@ import * as logger from './logger';
         }
     }
 
+    /**
+     * Performs a soft assertion to verify a string array contains a value.
+     *
+     * Details:
+     * - Useful for validating table row values, tag lists, and dropdown data.
+     * - Supports case-sensitive or case-insensitive behavior.
+     *
+     * @example
+     * await softContainsForStringArray(["Open", "Closed"], "open", "Status should exist");
+     */
     export async function softContainsForStringArray(actual: string[], expected: any, message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual : actual.toString().toLowerCase().split(',');
         expected = caseSensitive ? expected.trim() : expected.toLowerCase().trim();
@@ -52,6 +99,12 @@ import * as logger from './logger';
             context.testContext.assertsJson.soft.push({ softContainsForStringArray: "Failed", caseSensitive: `${caseSensitive}`, Actual: `${actual}`, Expected: `${expected}`, message: `${message}` })
         }
     }
+    /**
+     * Performs a soft assertion to verify a string array does not contain a value.
+     *
+     * @example
+     * await softNotContainsForStringArray(["Admin", "User"], "Guest", "Guest role should not exist");
+     */
     export async function softNotContainsForStringArray(actual: string[], expected: any, message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual : actual.toString().toLowerCase().split(',');
         expected = caseSensitive ? expected.trim() : expected.toLowerCase().trim();
@@ -63,6 +116,16 @@ import * as logger from './logger';
         }
     }
 
+    /**
+     * Performs a soft comparison between two string arrays.
+     *
+     * Details:
+     * - Marks failure when items from `actual` are missing in `expected`.
+     * - Adds mismatch values to the soft assertion payload.
+     *
+     * @example
+     * await softAssertCompareStringArrays(actualColumns, expectedColumns, "Column validation");
+     */
     export async function softAssertCompareStringArrays(actual: string[], expected: string[], message: string, caseSensitive: boolean = false) {
         let diffVals = actual.filter(item => expected.indexOf(item) < 0);
         let count = diffVals.length;
@@ -75,6 +138,12 @@ import * as logger from './logger';
         }
     }
 
+    /**
+     * Performs a soft assertion that `actual` contains at least one value from `expected`.
+     *
+     * @example
+     * await softContainsOneOfThem(message, ["saved", "updated"], "Success text should be present");
+     */
     export async function softContainsOneOfThem(actual: any, expected: string[], message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
         expected = caseSensitive ? expected : expected.toString().toLowerCase().split(',');;
@@ -90,6 +159,12 @@ import * as logger from './logger';
         }
     }
 
+    /**
+     * Performs a soft assertion that `actual` contains none of the values from `expected`.
+     *
+     * @example
+     * await softNotContainsOneOfThem(alertText, ["error", "failed"], "Failure keywords should not appear");
+     */
     export async function softNotContainsOneOfThem(actual: any, expected: string[], message: string, caseSensitive: boolean = false) {
         actual = caseSensitive ? actual.trim() : actual.toLowerCase().trim();
         expected = caseSensitive ? expected : expected.toString().toLowerCase().split(',');;
@@ -108,6 +183,16 @@ import * as logger from './logger';
         }
     }
 
+    /**
+     * Performs a hard equality assertion using Playwright `expect`.
+     *
+     * Details:
+     * - Logs result.
+     * - Throws on mismatch and fails the test immediately.
+     *
+     * @example
+     * await hardAssert(response.status(), 200, "API status code check");
+     */
     export async function hardAssert(actual: any, expected: any, message: string) {
         if (actual === expected) {
             await logger.info(`hardAssert :: ${message} {Actual : [${actual}] - Expected [${expected}]}`);
@@ -118,6 +203,12 @@ import * as logger from './logger';
         expect(actual, `hardAssert :: ${message} \n{Actual : [${actual}] - Expected [${expected}]}`).toEqual(expected);
     }
 
+    /**
+     * Performs a hard substring assertion using Playwright `expect(...).toContain(...)`.
+     *
+     * @example
+     * await hardContains(orderSummary, "Order Confirmed", "Order confirmation text check");
+     */
     export async function hardContains(actual: string, expected: string, message: string) {
         if (actual.includes(expected)) {
             await logger.info(`hardContains :: ${message} {Actual : [${actual}] - Expected [${expected}]}`);
@@ -127,6 +218,12 @@ import * as logger from './logger';
         expect(actual, `hardContains :: ${message} \n{Actual : [${actual}] - Expected [${expected}]}`).toContain(expected);
     }
 
+    /**
+     * Performs a hard negative substring assertion.
+     *
+     * @example
+     * await hardNotContains(pageContent, "Access Denied", "Restricted text should not appear");
+     */
     export async function hardNotContains(actual: string, expected: string, message: string) {
         if (!actual.includes(expected)) {
             await logger.info(`hardNotContains :: ${message} {String : [${actual}] - Substring [${expected}]}`);

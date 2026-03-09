@@ -30,6 +30,16 @@ export class UiElement {
 
     }
 
+    /**
+     * Get Page method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     protected async getPage() {
         if (this.isPopupExist === true) {
             if (playwrightWrapper.popup === undefined) {
@@ -60,22 +70,72 @@ export class UiElement {
 
     }
 
+    /**
+     * Switch Page method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async switchPage(pageIndex: number) {
         this.pageIndex = pageIndex;
         return this;
     }
 
+    /**
+     * Set Frame Locator method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async setFrameLocator(loc: any) {
         this.stringFramelocator = loc;
     }
 
+    /**
+     * Set Has Frame method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async setHasFrame(flag: boolean) {
         this.hasFrame = flag;
     }
+    /**
+     * Get Has Frame method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getHasFrame() {
         return this.hasFrame;
     }
 
+    /**
+     * Set Locator method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async setLocator(locator: string, options?: { description?: string }) {
         await this.clearFullCssAndXPath();
         this.locator = locator;
@@ -84,6 +144,16 @@ export class UiElement {
         return this;
     }
 
+    /**
+     * Click To Open Popup method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async clickToOpenPopup(options?: { force?: boolean }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
         const [newPopup] = await Promise.all([
@@ -93,24 +163,245 @@ export class UiElement {
         playwrightWrapper.popup = newPopup;
     }
 
+    /**
+     * Get Elements method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     protected async getElements() {
         return await this.waitTillElementToBeReady().then(async () => {
-
-            let elements = await this.getHasFrame() ? this.page.frameLocator(this.stringFramelocator).locator(await this.getLocator()).all() : this.page.locator(await this.getLocator()).all();
+            const resolvedLocator = await this.autoHealLocatorIfNeeded(await this.getLocator());
+            let elements = await this.getHasFrame() ? this.page.frameLocator(this.stringFramelocator).locator(resolvedLocator).all() : this.page.locator(resolvedLocator).all();
             // console.log('found element: ', ele['_selector']);
             return elements;
 
         })
     }
 
+    /**
+     * Get Element method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     protected async getElement() {
         return await this.waitTillElementToBeReady().then(async () => {
-            let ele = await this.getHasFrame() ? this.page.frameLocator(this.stringFramelocator).locator(await this.getLocator()) : this.page.locator(await this.getLocator());
+            const resolvedLocator = await this.autoHealLocatorIfNeeded(await this.getLocator());
+            let ele = await this.getHasFrame() ? this.page.frameLocator(this.stringFramelocator).locator(resolvedLocator) : this.page.locator(resolvedLocator);
             // console.log('found element: ', ele['_selector']);
             return ele;
         })
     }
 
+    protected async autoHealLocatorIfNeeded(locator: string): Promise<string> {
+        const autoHealEnabled = playwrightWrapper.autoHealEnabled?.valueOf() === undefined ? true : playwrightWrapper.autoHealEnabled;
+        if (!autoHealEnabled) {
+            return locator;
+        }
+
+        const currentCount = await this.safeLocatorCount(locator);
+        if (currentCount > 0) {
+            return locator;
+        }
+
+        const healedLocator = await this.findBestActionableLocator(locator);
+        if (healedLocator !== '') {
+            this.locator = healedLocator;
+            this.fullCss = healedLocator;
+            playwrightWrapper.logger.info(`Auto-heal applied on ${this.objectDescriptor}. Replaced locator with ${healedLocator}`);
+            return healedLocator;
+        }
+
+        playwrightWrapper.logger.info(`Auto-heal skipped on ${this.objectDescriptor}. Unable to find actionable locator for ${locator}`);
+        return locator;
+    }
+
+    protected async safeLocatorCount(locator: string): Promise<number> {
+        try {
+            const scopedLocator = await this.getScopedLocator(locator);
+            return await scopedLocator.count();
+        } catch {
+            return 0;
+        }
+    }
+
+    protected async getScopedLocator(locator: string): Promise<Locator> {
+        return await this.getHasFrame() ? this.page.frameLocator(this.stringFramelocator).locator(locator) : this.page.locator(locator);
+    }
+
+    protected async findBestActionableLocator(originalLocator: string): Promise<string> {
+        const tokens = this.extractLocatorTokens(originalLocator);
+        const candidates = this.buildLocatorCandidates(originalLocator, tokens).slice(0, 80);
+
+        let bestLocator = '';
+        let bestScore = -1;
+
+        for (const candidate of candidates) {
+            const score = await this.scoreLocatorCandidate(candidate);
+            if (score > bestScore) {
+                bestScore = score;
+                bestLocator = candidate;
+            }
+            if (score >= 90) {
+                break;
+            }
+        }
+
+        return bestScore > 0 ? bestLocator : '';
+    }
+
+    protected extractLocatorTokens(originalLocator: string): string[] {
+        const tokenSet = new Set<string>();
+        const tokenPattern = /[A-Za-z0-9_-]{3,}/g;
+        const quotedPattern = /["'`]([^"'`]{2,})["'`]/g;
+        const stopWords = new Set(['xpath', 'css', 'text', 'contains', 'button', 'link', 'div', 'span', 'class', 'name', 'role']);
+
+        const descriptorWords = this.objectDescriptor.match(tokenPattern) || [];
+        descriptorWords.forEach((value) => {
+            const normalizedValue = value.trim().toLowerCase();
+            if (!stopWords.has(normalizedValue)) {
+                tokenSet.add(value.trim());
+            }
+        });
+
+        const locatorWords = originalLocator.match(tokenPattern) || [];
+        locatorWords.forEach((value) => {
+            const normalizedValue = value.trim().toLowerCase();
+            if (!stopWords.has(normalizedValue)) {
+                tokenSet.add(value.trim());
+            }
+        });
+
+        for (const match of originalLocator.matchAll(quotedPattern)) {
+            if (match[1] && match[1].trim().length > 1) {
+                tokenSet.add(match[1].trim());
+            }
+        }
+
+        return Array.from(tokenSet).slice(0, 12);
+    }
+
+    protected buildLocatorCandidates(originalLocator: string, tokens: string[]): string[] {
+        const candidateSet = new Set<string>();
+        const escapedOriginal = originalLocator.trim();
+        if (escapedOriginal !== '') {
+            candidateSet.add(escapedOriginal);
+        }
+
+        const idRegex = /#([A-Za-z0-9_-]+)/g;
+        for (const match of originalLocator.matchAll(idRegex)) {
+            if (match[1]) {
+                candidateSet.add(`#${match[1]}`);
+                candidateSet.add(`[id="${this.escapeValue(match[1])}"]`);
+            }
+        }
+
+        const attrRegex = /\[([A-Za-z0-9_-]+)=['"]?([^'"\]]+)['"]?\]/g;
+        for (const match of originalLocator.matchAll(attrRegex)) {
+            const attr = match[1];
+            const val = match[2];
+            if (attr && val) {
+                candidateSet.add(`[${attr}="${this.escapeValue(val)}"]`);
+            }
+        }
+
+        for (const token of tokens) {
+            const escapedToken = this.escapeValue(token);
+            const escapedTextToken = this.escapeTextSelector(token);
+            candidateSet.add(`[id="${escapedToken}"]`);
+            candidateSet.add(`[name="${escapedToken}"]`);
+            candidateSet.add(`[data-testid="${escapedToken}"]`);
+            candidateSet.add(`[data-test="${escapedToken}"]`);
+            candidateSet.add(`[aria-label="${escapedToken}"]`);
+            candidateSet.add(`[placeholder="${escapedToken}"]`);
+            candidateSet.add(`[title="${escapedToken}"]`);
+            candidateSet.add(`[value="${escapedToken}"]`);
+            candidateSet.add(`button:has-text("${escapedTextToken}")`);
+            candidateSet.add(`a:has-text("${escapedTextToken}")`);
+            candidateSet.add(`[role="button"]:has-text("${escapedTextToken}")`);
+            candidateSet.add(`[role="link"]:has-text("${escapedTextToken}")`);
+            candidateSet.add(`label:has-text("${escapedTextToken}")`);
+            candidateSet.add(`text="${escapedTextToken}"`);
+        }
+
+        return Array.from(candidateSet);
+    }
+
+    protected async scoreLocatorCandidate(locator: string): Promise<number> {
+        try {
+            const scopedLocator = await this.getScopedLocator(locator);
+            const count = await scopedLocator.count();
+            if (count <= 0) {
+                return -1;
+            }
+
+            const first = scopedLocator.first();
+            const isVisible = await first.isVisible().catch(() => false);
+            const isEnabled = await first.isEnabled().catch(() => false);
+            const meta = await first.evaluate((element: Element) => {
+                const htmlElement = element as HTMLElement;
+                const tag = htmlElement.tagName.toLowerCase();
+                const role = htmlElement.getAttribute('role') || '';
+                const inputType = (htmlElement as HTMLInputElement).type || '';
+                return { tag, role, inputType };
+            }).catch(() => ({ tag: '', role: '', inputType: '' }));
+
+            let score = 0;
+            score += count === 1 ? 40 : Math.max(1, 16 - Math.min(count, 15));
+            if (isVisible) {
+                score += 25;
+            }
+            if (isEnabled) {
+                score += 20;
+            }
+
+            const actionableTags = ['a', 'button', 'input', 'select', 'textarea', 'label', 'summary'];
+            if (actionableTags.includes(meta.tag)) {
+                score += 20;
+            }
+            if (meta.role === 'button' || meta.role === 'link') {
+                score += 20;
+            }
+            if (['button', 'submit', 'checkbox', 'radio'].includes(meta.inputType)) {
+                score += 10;
+            }
+            if (locator.includes('data-testid') || locator.includes('[id=')) {
+                score += 8;
+            }
+
+            return score;
+        } catch {
+            return -1;
+        }
+    }
+
+    protected escapeValue(value: string): string {
+        return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    }
+
+    protected escapeTextSelector(value: string): string {
+        return value.replace(/\\/g, '\\\\').replace(/"/g, '\\"');
+    }
+
+    /**
+     * Set Css And XPath method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     protected async setCssAndXPath(element: Locator) {
         this.fullCss = (await cssPath(element)).toString();
         this.fullXpath = (await xPath(element)).toString();
@@ -118,6 +409,16 @@ export class UiElement {
 
 
 
+    /**
+     * Click Link method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async clickLink(linkName: string, options?: { linkNameExactMatch?: boolean, force?: boolean }) {
         let _linkNameExactMatch = options?.linkNameExactMatch?.valueOf() !== undefined ? options?.linkNameExactMatch : true;
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
@@ -149,6 +450,16 @@ export class UiElement {
 
     }
 
+    /**
+     * Type Chars method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async typeChars(chars: string) {
         const _chars = chars.split('');
         await this.getPage().then(async () => {
@@ -158,6 +469,16 @@ export class UiElement {
         })
     }
 
+    /**
+     * Click Last Link method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async clickLastLink(options?: { force?: boolean }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
         playwrightWrapper.logger.info(`clicked on the last link  - ${this.objectDescriptor}`);
@@ -165,6 +486,16 @@ export class UiElement {
         await this.clearFullCssAndXPath();
     }
 
+    /**
+     * Click First Link method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async clickFirstLink(options?: { force?: boolean }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
 
@@ -181,6 +512,16 @@ export class UiElement {
         return this;
     }
 
+    /**
+     * Get Next Sibling method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getNextSibling(tagName: string) {
         let ele = (await this.getElement());
         await this.setCssAndXPath(ele);
@@ -199,12 +540,32 @@ export class UiElement {
         }
         return this;
     }
+    /**
+     * Get Parent method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getParent() {
         let ele = (await this.getElement()).locator('..');
         await this.setCssAndXPath(ele);
         return this;
     }
 
+    /**
+     * Get Nth method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getNth(index: number) {
         let ele = (await this.getElement());
         ele = ele.nth(index);
@@ -212,12 +573,32 @@ export class UiElement {
         return this;
     }
 
+    /**
+     * Get Count method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getCount() {
         let length = Number(await (await this.getElement()).count());
         await this.clearFullCssAndXPath();
         return length;
     }
 
+    /**
+     * Get Page Object method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getPageObject(index: number) {
 
         await (await this.getElement()).nth(index).focus()
@@ -225,10 +606,30 @@ export class UiElement {
 
     }
 
+    /**
+     * Mouse Hover method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async mouseHover() {
         await (await this.getElement()).hover();
     }
 
+    /**
+     * Get Object method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getObject(index: number) {
 
         await (await this.getElement()).nth(index).focus()
@@ -248,6 +649,16 @@ export class UiElement {
 
     }
 
+    /**
+     * Get Property Value method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getPropertyValue(property: string, options?: { index: number }) {
         let _index = options?.index?.valueOf() !== undefined ? options?.index : 0;
         await (await this.getElement()).focus()
@@ -256,6 +667,16 @@ export class UiElement {
         return prpVal ?? '';
     }
 
+    /**
+     * Contains method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async contains(containsText: string, options?: { index?: number, locator?: string }) {
         let _index = options?.index?.valueOf() !== undefined ? options?.index : 0;
 
@@ -279,12 +700,32 @@ export class UiElement {
 
     }
 
+    /**
+     * Clear Full Css And XPath method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     protected async clearFullCssAndXPath() {
         this.fullCss = this.locator.toString();
         this.fullXpath = ''.toString();
         return this;
     }
 
+    /**
+     * Contains Click method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async containsClick(containsText: string, options?: { force?: boolean, index?: number }) {
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
         let _index = options?.index?.valueOf() !== undefined ? options?.index : 0;
@@ -296,6 +737,16 @@ export class UiElement {
 
     }
 
+    /**
+     * Wait Till Element To Be Ready method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async waitTillElementToBeReady() {
         await this.getPage();
         await this.page.waitForTimeout(100);
@@ -311,10 +762,30 @@ export class UiElement {
         return text;
     }
 
+    /**
+     * Get Current Object method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getCurrentObject() {
         return this;
     }
 
+    /**
+     * Get Page Title method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getPageTitle() {
         await this.getPage();
         let title = (await this.page.title()).toString();
@@ -322,6 +793,16 @@ export class UiElement {
         return title;
     }
 
+    /**
+     * Is Exist method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async isExist() {
         await this.getPage();
         await this.page.waitForTimeout(10);
@@ -334,24 +815,64 @@ export class UiElement {
         return flag;
     }
 
+    /**
+     * Is Enabled method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async isEnabled() {
         let enabled = (await this.getElement()).isEnabled();
         await this.clearFullCssAndXPath();
         return enabled;
     }
 
+    /**
+     * Is Disabled method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async isDisabled() {
         let disabled = (await this.getElement()).isDisabled();
         await this.clearFullCssAndXPath();
         return disabled;
     }
 
+    /**
+     * Is Checked method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async isChecked() {
         let checked = (await this.getElement()).isChecked();
         await this.clearFullCssAndXPath();
         return checked;
     }
 
+    /**
+     * Is Visible method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async isVisible() {
         let visible = (await this.getElement()).isVisible()
         await this.clearFullCssAndXPath();
@@ -383,6 +904,16 @@ export class UiElement {
             await staticWait(1000);
         }
     }
+    /**
+     * Child Has Text method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async childHasText(text: string, options?: { exactMatch?: boolean }) {
         await this.waitTillElementToBeReady();
         let _exactMatch = options?.exactMatch?.valueOf() !== undefined ? options?.exactMatch : false;
@@ -398,6 +929,16 @@ export class UiElement {
         }
 
     }
+    /**
+     * Get Css method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getCss(cssValue: string) {
         return await this.getPage().then(async () => {
             let locatorE = (await this.getElement());
@@ -420,18 +961,58 @@ export class UiElement {
         })
     }
 
+    /**
+     * Get Locator method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     protected async getLocator() {
         return this.fullCss === this.locator ? this.locator : this.fullCss;
     }
 
+    /**
+     * Get Locator Full Css method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getLocatorFullCss() {
         return this.fullCss;
     }
 
+    /**
+     * Get Locator Full Xpath method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getLocatorFullXpath() {
         return this.fullXpath;
     }
 
+    /**
+     * Find method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async find(locator: string, options?: { index?: number, hasText?: string, nthObj?: number }) {
         let _index = options?.index?.valueOf() !== undefined ? options?.index : 0;
         let _objIndex = options?.nthObj?.valueOf() !== undefined ? options?.nthObj : 0;
@@ -451,11 +1032,31 @@ export class UiElement {
         return this;
     }
 
+    /**
+     * Set Description method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async setDescription(desc: string) {
         this.objectDescriptor = desc;
         return this;
     }
 
+    /**
+     * Get Text All Matching Objects method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getTextAllMatchingObjects() {
         let arr: string[] = []; // Initialize arr as an empty array of type string[]
         let count = await (await this.getElement()).count();
@@ -469,6 +1070,16 @@ export class UiElement {
         return arr;
     }
 
+    /**
+     * Clear method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async clear(option?: { force?: boolean }) {
         let _force = option?.force?.valueOf() !== undefined;
 
@@ -478,6 +1089,16 @@ export class UiElement {
         return this;
 
     }
+    /**
+     * Click method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async click(options?: { objIndex?: number, force?: boolean }) {
         let _objIndex = options?.objIndex?.valueOf() === undefined ? 0 : options?.objIndex;
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
@@ -487,6 +1108,16 @@ export class UiElement {
         await this.clearFullCssAndXPath();
     }
 
+    /**
+     * Dbl Click method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async dblClick(options?: { objIndex?: number, force?: boolean }) {
         let _objIndex = options?.objIndex?.valueOf() === undefined ? 0 : options?.objIndex;
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
@@ -571,6 +1202,16 @@ export class UiElement {
         })
     }
 
+    /**
+     * Check method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async check(options?: { objIndex?: number, force?: boolean }) {
         let _objIndex = options?.objIndex === undefined ? 0 : options?.objIndex;
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
@@ -588,6 +1229,16 @@ export class UiElement {
         })
     }
 
+    /**
+     * Uncheck method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async uncheck(options?: { objIndex?: number, force?: boolean }) {
         let _objIndex = options?.objIndex === undefined ? 0 : options?.objIndex;
         let _force = options?.force?.valueOf() !== undefined ? options?.force : false;
@@ -635,6 +1286,16 @@ export class UiElement {
         await this.clearFullCssAndXPath();
     }
 
+    /**
+     * Press Sequentially method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async pressSequentially(inputString: any, options?: { delay?: number, keyPress?: string }) {
         let _delay = options?.delay?.valueOf() !== undefined ? 0 : options?.delay;
         await (await this.getElement()).pressSequentially(inputString, { delay: _delay });
@@ -645,18 +1306,48 @@ export class UiElement {
         await this.clearFullCssAndXPath();
     }
 
+    /**
+     * Select List Option By Text method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async selectListOptionByText(option: string) {
         await (await this.getElement()).selectOption(option)
         playwrightWrapper.logger.info(`${this.objectDescriptor} - Selecting the option : ` + option)
         await this.clearFullCssAndXPath();
     }
 
+    /**
+     * Select List Option By Index method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async selectListOptionByIndex(indexOf: number) {
         await (await this.getElement()).selectOption({ index: indexOf })
         playwrightWrapper.logger.info(`${this.objectDescriptor} - Selecting the option index : ` + indexOf)
         await this.clearFullCssAndXPath();
     }
 
+    /**
+     * Get List Options method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getListOptions() {
         let innerTexts = await this.getHasFrame() ? await this.page.frameLocator(this.stringFramelocator).locator(await this.getLocator() + ' option').allInnerTexts() : await this.page.locator(await this.getLocator() + ' option').allInnerTexts();
         await this.clearFullCssAndXPath();
@@ -669,24 +1360,64 @@ export class UiElement {
         return value;
     }
 
+    /**
+     * Get Ui Element method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getUiElement() {
         let ele = await new UiElement('xpath=' + (await this.getLocatorFullXpath()));
         this.clearFullCssAndXPath();
         return ele;
     }
 
+    /**
+     * Get Column Has Text method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getColumnHasText(cellvalue: string) {
         let ele = (await this.getElement()).locator('td').filter({ hasText: `${cellvalue} ` });
         await this.setCssAndXPath(ele);
         return this;
     }
 
+    /**
+     * Wait For Rows To Load method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async waitForRowsToLoad(options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         await (await this.getElement()).locator(_locator).nth(0).waitFor({ state: "attached", timeout: 60000 });
         return this;
     }
 
+    /**
+     * Wait For Home Tabs To Load method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async waitForHomeTabsToLoad(options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'ecp-ucl-skeleton-loader' : options?.locator;
         await (await this.getElement()).locator(_locator).nth(0).waitFor({ state: "hidden", timeout: 60000 });
@@ -704,7 +1435,14 @@ export class UiElement {
      * @param [options] - The `options` parameter is an optional object that can contain the following
      * properties:
      * @returns the cell data as a string.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getCellData(row: number, col: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         playwrightWrapper.logger.info(`getting cell data from ${this.objectDescriptor} - Row,Column [${row},${col}]`);
@@ -722,7 +1460,14 @@ export class UiElement {
      * @param [options] - The `options` parameter is an optional object that can contain the following
      * properties:
      * @returns an array of inner texts of elements in a row.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getRowData(row: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let arr = await (await this.getElement()).locator(_locator).nth(row).allInnerTexts();
@@ -730,6 +1475,16 @@ export class UiElement {
         return arr;
     }
 
+    /**
+     * Get Row Data As Array method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getRowDataAsArray(row: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let aRow = (await this.getElement()).locator(_locator).nth(row);
@@ -752,7 +1507,14 @@ export class UiElement {
      * @param [options] - The `options` parameter is an optional object that can contain the following
      * properties:
      * @returns an array of data from a specific column in a table.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getAllRowsColumnData(column: number, options?: { locator?: string, numberofRows?: number, startRowNumber?: number }) {
        let _locator = options?.locator?.valueOf() === void 0 ? "tr" : options?.locator;
         let _startRowNumber = options?.startRowNumber?.valueOf() === void 0 ? 0 : options?.startRowNumber;
@@ -773,7 +1535,14 @@ export class UiElement {
      * The function retrieves the inner texts of all th elements within a specified element and returns
      * them as an array.
      * @returns an array of header names.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getHeaderNames() {
         let arr = await (await this.getElement()).locator('th').allInnerTexts();
         await this.clearFullCssAndXPath();
@@ -785,7 +1554,14 @@ export class UiElement {
      * returns the coding assistant.
      * @returns This `async tbody()` function is returning the current object (`this`) after setting
      * the CSS and XPath properties of the `tbody` element obtained from the `getElement()` function.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async tbody() {
         let ele = (await this.getElement()).locator('tbody');
         await this.setCssAndXPath(ele);
@@ -796,7 +1572,14 @@ export class UiElement {
      * The above function is an asynchronous method in TypeScript that locates the 'thead' element,
      * sets its CSS and XPath properties, and returns the updated element.
      * @returns The `thead` element is being returned after setting its CSS and XPath properties.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async thead() {
         let ele = (await this.getElement()).locator('thead');
         await this.setCssAndXPath(ele);
@@ -810,7 +1593,14 @@ export class UiElement {
      * @param [options] - The `options` parameter is an optional object that can contain the following
      * properties:
      * @returns a Promise that resolves to the current instance of the object.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getRow(index: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         return await this.waitTillElementToBeReady().then(async () => {
@@ -826,7 +1616,14 @@ export class UiElement {
      * @param [index=0] - The index parameter is used to specify the index of the element to be
      * retrieved from the list of elements. It is an optional parameter with a default value of 0.
      * @returns the current instance of the object.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getTable(index = 0) {
         let ele = (await this.getElement()).nth(index);
         await this.setCssAndXPath(ele);
@@ -843,7 +1640,14 @@ export class UiElement {
      * column name must match exactly (including case sensitivity). If `exactMatch` is set to `false`
      * (or not provided
      * @returns the index of the column header with the specified name.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getHederColumnNumber(colName: string, exactMatch = false) {
         const innerTextArr = await (await this.getElement()).locator('th').allInnerTexts();
         await this.clearFullCssAndXPath();
@@ -859,7 +1663,14 @@ export class UiElement {
      * table header element in the table. It is used to specify which table header element to retrieve
      * the name from.
      * @returns the text of the header name at the specified index.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getHeaderName(index: number) {
         let text = await (await this.getElement()).locator('th').nth(index).innerText();
         await this.clearFullCssAndXPath();
@@ -870,7 +1681,14 @@ export class UiElement {
      * The function `getHeaderColumnLength` returns the number of header columns in a table after
      * waiting for the element to be ready.
      * @returns the length of the header column.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getHeaderColumnLength() {
         return await this.waitTillElementToBeReady().then(async () => {
             let headerCount = Number(await (await this.getElement()).locator('th').count());
@@ -884,7 +1702,14 @@ export class UiElement {
      * locator if none is provided.
      * @param [options] - An optional object that can contain the following property:
      * @returns the length of rows in a table.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getRowsLength(options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         return await this.waitTillElementToBeReady().then(async () => {
@@ -903,7 +1728,14 @@ export class UiElement {
      * The function `getMetaTableRowsLength` returns the number of rows in a table element.
      * @param [options] - An optional object that can contain the following properties:
      * @returns the length of the table rows that match the specified locator.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMetaTableRowsLength(options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         return await this.waitTillElementToBeReady().then(async () => {
@@ -915,6 +1747,16 @@ export class UiElement {
 
     }
 
+    /**
+     * Get Column Length method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getColumnLength(rowIndex?: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let rowI = rowIndex ?? 0;
@@ -923,6 +1765,16 @@ export class UiElement {
         return length;
     }
 
+    /**
+     * Get Row Column method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getRowColumn(rowIndex: number, columnIndex: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let rowColumn = (await this.getElement()).locator(_locator).nth(rowIndex).locator('td').nth(columnIndex);
@@ -940,7 +1792,14 @@ export class UiElement {
      * properties:
      * @returns a Promise that resolves to the index of the matched row in the table. If a match is
      * found, it returns the index of the row. If no match is found, it returns -1.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMatchedRowIndex(rowValues: string[], options?: { locator?: string, exactMatch?: boolean }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _exactMatch = options?.exactMatch?.valueOf() === undefined ? false : options?.exactMatch;
@@ -986,7 +1845,14 @@ export class UiElement {
      * @param [options] - The `options` parameter is an optional object that can contain two
      * properties:
      * @returns an array of indices that match the specified row values.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMatchedRowIndices(rowValues: string[], options?: { locator?: string, exactMatch?: boolean }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _exactMatch = options?.exactMatch?.valueOf() === undefined ? false : options?.exactMatch;
@@ -1028,7 +1894,14 @@ export class UiElement {
      * properties:
      * @returns the index of the matched row in the meta table. If a match is found, it returns the
      * index of the row. If no match is found, it returns -1.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMetaTableMatchedRowIndex(rowValues: string[], options?: { locator?: string, exactMatch?: boolean }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _exactMatch = options?.exactMatch?.valueOf() === undefined ? false : options?.exactMatch;
@@ -1063,6 +1936,16 @@ export class UiElement {
 
     }
 
+    /**
+     * Get Meta Table Matched Row Indices method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMetaTableMatchedRowIndices(rowValues: string[], options?: { locator?: string, exactMatch?: boolean, minColumnSize: number }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _exactMatch = options?.exactMatch?.valueOf() === undefined ? false : options?.exactMatch;
@@ -1107,6 +1990,16 @@ export class UiElement {
 
     }
 
+    /**
+     * Click Meta Table Row Link method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async clickMetaTableRowLink(rowIndex: number, options?: { linkName?: string, lnkIndex?: number, locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _linkName = options?.linkName?.valueOf() === undefined ? false : options?.linkName;
@@ -1119,6 +2012,16 @@ export class UiElement {
         await this.clearFullCssAndXPath();
     }
 
+    /**
+     * Click Row By Link Name method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async clickRowByLinkName(rowIndex: number, options?: { linkName?: string, lnkIndex?: number, locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _linkName = options?.linkName?.valueOf() === undefined ? false : options?.linkName;
@@ -1132,12 +2035,32 @@ export class UiElement {
 
     }
 
+    /**
+     * Is Column Value Exist method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async isColumnValueExist(colValue: string) {
         let exist = await (await this.getElement()).locator('td').filter({ hasText: `${colValue} ` }).count() > 0
         await this.clearFullCssAndXPath();
         return exist;
     }
 
+    /**
+     * Click Row Link method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async clickRowLink(rowIndex: number, options?: { linkIndex?: number, force?: boolean, locator?: string }) {
         let _lIndex = options?.linkIndex?.valueOf() !== undefined ? options?.linkIndex?.valueOf() : 0;
         let _force = options?.force?.valueOf() !== undefined ? options?.force?.valueOf() : false;
@@ -1147,6 +2070,16 @@ export class UiElement {
         await this.clearFullCssAndXPath();
     }
 
+    /**
+     * Meta Table Click Row Link method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async metaTableClickRowLink(rowIndex: number, options?: { locator?: string, lnkIndex?: number }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _lnkIndex = options?.lnkIndex?.valueOf() === undefined ? -1 : options?.lnkIndex;
@@ -1170,7 +2103,22 @@ export const playwrightWrapper = {
     context: undefined as unknown as BrowserContext,
     browser: undefined as unknown as Browser,
     logger: customLogger,
-    commonFrameLocator: undefined as unknown as string
+    commonFrameLocator: undefined as unknown as string,
+    autoHealEnabled: true
+}
+
+/**
+ * Set Auto Heal method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
+export function setAutoHeal(enabled: boolean) {
+    playwrightWrapper.autoHealEnabled = enabled;
 }
 
 export const invokeBrowser = async (browserType: string, options?: { headless?: boolean, channel?: string }) => {
@@ -1196,23 +2144,63 @@ export const invokeBrowser = async (browserType: string, options?: { headless?: 
 
 }
 
+/**
+ * Wait For Page Load method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function waitForPageLoad() {
     await playwrightWrapper.page.waitForLoadState('domcontentloaded');
     await playwrightWrapper.page.waitForLoadState();
     return true;
 }
 
+/**
+ * Wait For Url method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function waitForUrl(url: string) {
 
     playwrightWrapper.logger.info(' Waiting for the URL : ' + url)
     await playwrightWrapper.page.waitForURL(url, { timeout: 120000, waitUntil: 'domcontentloaded' })
 }
 
+/**
+ * Wait For Spinner Hidden method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function waitForSpinnerHidden() {
     let _locator = '.spinner';
     await playwrightWrapper.page.locator(_locator).nth(0).waitFor({ state: "hidden", timeout: 60000 });
 }
 
+/**
+ * Static Wait method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function staticWait(timeOut: number, isPage: boolean = true, waitForSpinner: boolean = true) {
     if (isPage) {
         playwrightWrapper.logger.info(`Waiting for the page : ${timeOut} milliseconds`);
@@ -1224,12 +2212,32 @@ export async function staticWait(timeOut: number, isPage: boolean = true, waitFo
     }
 }
 
+/**
+ * Goto Url method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function gotoUrl(url: string) {
     // await playwrightWrapper.page.route('**/*.{png,jpg,jpeg}', route => route.abort());
     await playwrightWrapper.page.goto(url, { timeout: 500000, waitUntil: 'domcontentloaded' });
     playwrightWrapper.logger.info('Launching URL : ' + url)
 }
 
+/**
+ * Closeplaywright method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function closeplaywright() {
     if (playwrightWrapper.popup !== undefined) {
         await playwrightWrapper.popup.close();
@@ -1239,6 +2247,16 @@ export async function closeplaywright() {
     }
 }
 
+/**
+ * Get Url method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function getUrl(pageIndex: number = 0) {
     const pages = playwrightWrapper.context.pages();
     const page = pages[pageIndex];
@@ -1246,6 +2264,16 @@ export async function getUrl(pageIndex: number = 0) {
     return page.url().toString();
 }
 
+/**
+ * Pause method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function pause(options?: { isPage?: boolean }) {
     let _flag = options?.isPage?.valueOf() === undefined ? true : options?.isPage?.valueOf();
     if (_flag) {
@@ -1255,6 +2283,16 @@ export async function pause(options?: { isPage?: boolean }) {
     }
 }
 
+/**
+ * Refresh Page method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function refreshPage(options?: { isPage?: boolean }) {
     let _flag = options?.isPage?.valueOf() === undefined ? true : options?.isPage?.valueOf();
     if (_flag) {
@@ -1264,12 +2302,32 @@ export async function refreshPage(options?: { isPage?: boolean }) {
     }
 }
 
+/**
+ * Get Api Response method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function getApiResponse(url: string) {
     const response = await playwrightWrapper.page.waitForResponse((response) => response.url().includes(url));
     return response;
 
 }
 
+/**
+ * Loop Through Elements And Click method.
+ 
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
 export async function loopThroughElementsAndClick(locatorVal: any, index: Number = 0, action: string = 'click') {
     const allElements = await playwrightWrapper.page.locator(locatorVal).all();
     let count = 0;

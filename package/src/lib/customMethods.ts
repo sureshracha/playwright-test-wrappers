@@ -2,6 +2,16 @@ import { Locator } from "@playwright/test";
 
 export class CustomMethods {
 
+    /**
+     * Get Text All Matching Objects method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getTextAllMatchingObjects(page: Locator) {
         let arr: string[] = []; // Initialize arr as an empty array of type string[]
         let count = await page.count();
@@ -13,6 +23,16 @@ export class CustomMethods {
     }
 
 
+    /**
+     * Get Css method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getCss(page: Locator, cssValue: string) {
         let jsonVals = await page.evaluate((element: any) => {
             console.log("getting css.....")
@@ -34,6 +54,16 @@ export class CustomMethods {
 
 
 
+    /**
+     * Press Sequentially method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async pressSequentially(page: Locator, inputString: any, options?: { delay?: number, keyPress?: string }) {
         let _delay = options?.delay?.valueOf() !== undefined ? 0 : options?.delay;
         await page.pressSequentially(inputString, { delay: _delay });
@@ -53,7 +83,14 @@ export class CustomMethods {
      * @param [options] - The `options` parameter is an optional object that can contain the following
      * properties:
      * @returns the cell data as a string.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getCellData(page: Locator, row: number, col: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let val = await page.locator(_locator).nth(row).locator('td').nth(col).innerText();
@@ -68,13 +105,30 @@ export class CustomMethods {
      * @param [options] - The `options` parameter is an optional object that can contain the following
      * properties:
      * @returns an array of inner texts of elements in a row.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getRowData(page: Locator, row: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let arr = await page.locator(_locator).nth(row).allInnerTexts();
         return arr;
     }
 
+    /**
+     * Get Row Data As Array method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getRowDataAsArray(page: Locator, row: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let aRow = await page.locator(_locator).nth(row);
@@ -97,7 +151,14 @@ export class CustomMethods {
      * @param [options] - The `options` parameter is an optional object that can contain the following
      * properties:
      * @returns an array of data from a specific column in a table.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getAllRowsColumnData(page: Locator, column: number, options?: { locator?: string, numberofRows?: number }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _numberofRows = options?.numberofRows?.valueOf() === undefined ? 0 : options?.numberofRows;
@@ -119,7 +180,14 @@ export class CustomMethods {
      * The function retrieves the inner texts of all th elements within a specified element and returns
      * them as an array.
      * @returns an array of header names.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getHeaderNames(page: Locator) {
         let arr = await page.locator('th').allInnerTexts();
         return arr;
@@ -134,7 +202,14 @@ export class CustomMethods {
      * @param [options] - The `options` parameter is an optional object that can contain the following
      * properties:
      * @returns a Promise that resolves to the current instance of the object.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getRow(page: Locator, index: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let ele = await page.locator(_locator).nth(index);
@@ -152,7 +227,14 @@ export class CustomMethods {
      * column name must match exactly (including case sensitivity). If `exactMatch` is set to `false`
      * (or not provided
      * @returns the index of the column header with the specified name.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getHederColumnNumber(page: Locator, colName: string, exactMatch = false) {
         const innerTextArr = await (await page).locator('th').allInnerTexts();
         if (exactMatch) {
@@ -168,7 +250,14 @@ export class CustomMethods {
      * table header element in the table. It is used to specify which table header element to retrieve
      * the name from.
      * @returns the text of the header name at the specified index.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getHeaderName(page: Locator, index: number) {
         let text = await (await page).locator('th').nth(index).innerText();
         return text;
@@ -180,7 +269,14 @@ export class CustomMethods {
      * The function `getMetaTableRowsLength` returns the number of rows in a table element.
      * @param [options] - An optional object that can contain the following properties:
      * @returns the length of the table rows that match the specified locator.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMetaTableRowsLength(page: Locator, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let length = Number(await (await page.locator(' tr')).locator(_locator).count());
@@ -188,6 +284,16 @@ export class CustomMethods {
 
     }
 
+    /**
+     * Get Column Length method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getColumnLength(page: Locator, rowIndex?: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let rowI = rowIndex ?? 0;
@@ -195,6 +301,16 @@ export class CustomMethods {
         return length;
     }
 
+    /**
+     * Get Row Column method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getRowColumn(page: Locator, rowIndex: number, columnIndex: number, options?: { locator?: string }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let rowColumn = await page.locator(_locator).nth(rowIndex).locator('td').nth(columnIndex);
@@ -211,7 +327,14 @@ export class CustomMethods {
      * properties:
      * @returns a Promise that resolves to the index of the matched row in the table. If a match is
      * found, it returns the index of the row. If no match is found, it returns -1.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMatchedRowIndex(page: Locator, rowValues: string[], options?: { locator?: string, exactMatch?: boolean }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _exactMatch = options?.exactMatch?.valueOf() === undefined ? false : options?.exactMatch;
@@ -255,7 +378,14 @@ export class CustomMethods {
      * @param [options] - The `options` parameter is an optional object that can contain two
      * properties:
      * @returns an array of indices that match the specified row values.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMatchedRowIndices(page: Locator, rowValues: string[], options?: { locator?: string, exactMatch?: boolean }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _exactMatch = options?.exactMatch?.valueOf() === undefined ? false : options?.exactMatch;
@@ -296,7 +426,14 @@ export class CustomMethods {
      * properties:
      * @returns the index of the matched row in the meta table. If a match is found, it returns the
      * index of the row. If no match is found, it returns -1.
-     */
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMetaTableMatchedRowIndex(page: Locator, rowValues: string[], options?: { locator?: string, exactMatch?: boolean }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _exactMatch = options?.exactMatch?.valueOf() === undefined ? false : options?.exactMatch;
@@ -330,6 +467,16 @@ export class CustomMethods {
 
     }
 
+    /**
+     * Get Meta Table Matched Row Indices method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async getMetaTableMatchedRowIndices(page: Locator, rowValues: string[], options?: { locator?: string, exactMatch?: boolean, minColumnSize: number }) {
         let _locator = options?.locator?.valueOf() === undefined ? 'tr' : options?.locator;
         let _exactMatch = options?.exactMatch?.valueOf() === undefined ? false : options?.exactMatch;
@@ -374,6 +521,16 @@ export class CustomMethods {
 
     }
 
+    /**
+     * Is Exist method.
+     
+ *
+ * Usage:
+ * - Use this method in your Playwright test flow with parameters shown in its signature.
+ *
+ * @example
+ * // See the method signature directly below and pass matching arguments.
+ */
     async isExist(page: Locator, locactor: any) {
         let totalObjs = await page.locator(locactor).all();
         let flag = totalObjs.length > 0;
